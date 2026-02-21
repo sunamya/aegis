@@ -1,0 +1,15 @@
+# Azure AI & Agents
+azure-ai-projects>=1.0.0b1
+azure-identity
+azure-core
+
+# API Target & Mocking
+fastapi
+uvicorn
+requests
+python-multipart
+
+# Utilities
+python-dotenv
+markdown
+pydantic>=2.0.0
