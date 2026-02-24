@@ -1,4 +1,5 @@
 import os
+import time
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
 import re
@@ -42,11 +43,13 @@ def extract_score(report_text):
         return max([float(s) for s in scores])
     return 0.0
 
-def main():
+def main(log_callback=None):
     # 1. Create a shared Thread for the entire loop
     thread = project_client.agents.threads.create()
     print(f"🧵 Created Thread: {thread.id}")
-
+    # 1. Start Recon
+    if log_callback:
+        log_callback(f"Phase 1: Starting Recon on {TARGET_URL}")
     # --- PHASE 1: RECONNAISSANCE ---
     recon_output = run_agent_step(
         thread.id, 
@@ -55,6 +58,13 @@ def main():
         f"Perform a deep recon on {TARGET_URL}. Use Bing to find OpenAPI specs and list all endpoints."
     )
     print(f"\n📡 [RECON COMPLETED]\n{recon_output}\n...")
+    if log_callback:
+        log_callback(f"📡 [RECON COMPLETED]\n{recon_output}\n...")
+
+    # 2. Simulate Attack
+    if log_callback:
+        log_callback("Phase 2: Adversarial Agent engaged.")
+        log_callback("CALLING: TargetApiTool.get_user_by_id(user_id='99')")
 
     # --- PHASE 2: ATTACK LOOP ---
     attack_output = run_agent_step(
@@ -64,6 +74,9 @@ def main():
         "Based on the recon, start the attack loop. Try IDOR on user IDs and test for debug headers."
     )
     print(f"\n💥 [ATTACK COMPLETED]\n{attack_output}\n...")
+    time.sleep(1) # For dramatic effect in the UI
+    if log_callback:
+        log_callback(f"\n💥 [ATTACK COMPLETED]\n{attack_output}\n...")
 
     # --- PHASE 3: REPORTING ---
     # We ask the Reporter to look at the WHOLE thread and summarize
@@ -75,6 +88,9 @@ def main():
     )
     # Extract the score for a "Grand Finale" display
     numeric_risk = extract_score(final_report)
+
+    if log_callback:
+        log_callback("Phase 3: Generating final risk assessment...")
     
     # Determine the "Grade"
     if numeric_risk >= 7:
@@ -94,6 +110,7 @@ def main():
     with open("./reports/security_report.md", "w",  encoding="utf-8") as f:
         f.write(final_report)
     print("\n✅ Report saved to security_report.md")
+    return final_report, numeric_risk
 
 if __name__ == "__main__":
     main()
